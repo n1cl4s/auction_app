@@ -90,3 +90,4 @@ Samma format används för registrering och inloggning.
 Sessionsinloggningen följer kursens pedagogiska exempel med `HttpContext.Session`. Lösenord hashats med ASP.NET Cores `PasswordHasher`, och hash returneras aldrig till klienten. Sessioner finns i processens minne, försvinner vid omstart och delas inte mellan instanser. Produktionsläge kräver HTTPS för cookien. Produktionsautentisering, sessionsrotation, CSRF-skydd och inloggningsbegränsning behöver behandlas före verklig användning. 
 
 Vidareutveckla startpunkten med testning, dokumentation och små funktionella steg enligt projektuppgiften.
+# auction_app
