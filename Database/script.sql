@@ -1,0 +1,1 @@
+ALTER USER 'auctionuser'@'%' IDENTIFIED BY 'mjukglass';
