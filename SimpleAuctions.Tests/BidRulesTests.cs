@@ -30,7 +30,7 @@ public void BidBeforeEndTimeTest()
     var endTime = new DateTimeOffset(2026, 12, 31, 18, 0, 0, TimeSpan.Zero);
     var now = endTime.AddSeconds(-1);
 
-    string? result = BidRules.Validate(100, endTime, now, 1, 2);
+    string? result = BidRules.Validate(1000, endTime, now, 1, 2);
 
     Assert.Null(result);
 }
@@ -56,6 +56,17 @@ public void OnlyIntBidTest()
     var now = endTime.AddHours(-1);
 
     string? result = BidRules.Validate(100.50m, endTime, now, 1, 2);
+
+    Assert.NotNull(result);
+}
+
+[Fact]
+public void MinRaiseTest()
+{
+    var endTime = new DateTimeOffset(2026, 12, 31, 18, 0, 0, TimeSpan.Zero);
+    var now = endTime.AddHours(-1);
+
+    string? result = BidRules.Validate(5999m, endTime, now, 1, 2, 5000m);
 
     Assert.NotNull(result);
 }

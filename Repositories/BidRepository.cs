@@ -45,8 +45,13 @@ public class BidRepository(IConfiguration configuration)
         }
         if (sellerId == buyerId)
         return (null, "You cannot bid on your own auction.", true, true);
+        await using var maxCommand = new MySqlCommand(
+        "SELECT MAX(amount) FROM bids WHERE auction_id = @id;", connection);
+        maxCommand.Parameters.AddWithValue("@id", auctionId);
+        var maxValue = await maxCommand.ExecuteScalarAsync();
+        decimal? highestBid = maxValue is DBNull ? null : (decimal)maxValue!;
         var now = DateTimeOffset.UtcNow;
-        string? error = BidRules.Validate(amount, endTime, now, sellerId, buyerId);
+        string? error = BidRules.Validate(amount, endTime, now, sellerId, buyerId, highestBid);
         if (error is not null)
             return (null, error, true, false);
 

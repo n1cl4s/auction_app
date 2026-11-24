@@ -2,7 +2,7 @@ namespace SimpleAuctions.Rules;
 
 public static class BidRules
 {
-    public static string? Validate(decimal amount, DateTimeOffset endTime, DateTimeOffset now, int sellerId, int buyerId)
+    public static string? Validate(decimal amount, DateTimeOffset endTime, DateTimeOffset now, int sellerId, int buyerId, decimal? highestBid = null)
     {
         if (sellerId == buyerId)
         return "You cannot bid on your own auction.";
@@ -15,6 +15,10 @@ public static class BidRules
 
         if (amount <= 0)
             return "Amount must be greater than zero.";
+
+        if (amount < (highestBid ?? 0) + 1000)
+            return "Bid must be at least 1000 kr higher than the highest bid.";
+            
         return null;
     }
 }
