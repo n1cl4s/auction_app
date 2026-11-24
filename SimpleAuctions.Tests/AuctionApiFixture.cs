@@ -15,7 +15,7 @@ public sealed class AuctionApiCollection : ICollectionFixture<AuctionApiFixture>
 public sealed class AuctionApiFixture : IAsyncLifetime
 {
     private readonly MySqlContainer database = new MySqlBuilder("mysql:8.4")
-        .WithDatabase("simple_auctions")
+        .WithDatabase("simple_car_auctions")
         .WithUsername("root")
         .WithPassword("test-password")
         .Build();
@@ -29,26 +29,21 @@ public sealed class AuctionApiFixture : IAsyncLifetime
 
         await using var connection = new MySqlConnection(database.GetConnectionString());
         await connection.OpenAsync();
-        var schema = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Database", "script.sql"));
-        var statements = schema.Split(';', StringSplitOptions.RemoveEmptyEntries)
-            .Select(statement => string.Join(Environment.NewLine,
-                statement.Split('\n').Where(line => !line.TrimStart().StartsWith("--", StringComparison.Ordinal))))
-            .Where(statement => !string.IsNullOrWhiteSpace(statement));
-        foreach (var statement in statements)
-        {
-            await using var command = new MySqlCommand(statement, connection);
-            await command.ExecuteNonQueryAsync();
-        }
+        var schema = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Database", "car-auctions.sql"));
+        await using var command = new MySqlCommand(schema, connection);
+        await command.ExecuteNonQueryAsync();
     }
 
     public HttpClient CreateClient() => factory.CreateClient();
+
+    public string ConnectionString => database.GetConnectionString();
 
     public async Task ResetDatabaseAsync()
     {
         await using var connection = new MySqlConnection(database.GetConnectionString());
         await connection.OpenAsync();
 
-        foreach (var table in new[] { "bids", "auctions", "users" })
+        foreach (var table in new[] { "buy_now_purchases", "auction_images", "bids", "auctions", "users" })
         {
             await using var command = new MySqlCommand($"DELETE FROM {table};", connection);
             await command.ExecuteNonQueryAsync();
