@@ -2,8 +2,11 @@ namespace SimpleAuctions.Rules;
 
 public static class BidRules
 {
-    public static string? Validate(decimal amount)
+    public static string? Validate(decimal amount, DateTimeOffset endTime, DateTimeOffset now)
     {
+        if (now >= endTime)
+        return "Auction has ended";
+        
         if (decimal.Round(amount, 2) != amount)
             return "Amount must have at most two decimal places.";
 

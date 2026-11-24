@@ -31,19 +31,22 @@ public class BidRepository(IConfiguration configuration)
     {
         await using var connection = new MySqlConnection(connectionString);
         await connection.OpenAsync();
+        DateTimeOffset endTime;
         await using (var command = new MySqlCommand(
-            "SELECT id FROM auctions WHERE id = @id;", connection))
+            "SELECT end_time FROM auctions WHERE id = @id;", connection))
         {
             command.Parameters.AddWithValue("@id", auctionId);
-            if (await command.ExecuteScalarAsync() is null)
+            var endTimeValue = await command.ExecuteScalarAsync();
+            if (endTimeValue is null)
                 return (null, "Auction not found.", false);
+            endTime = new DateTimeOffset(DateTime.SpecifyKind((DateTime)endTimeValue, DateTimeKind.Utc));
         }
 
-        string? error = BidRules.Validate(amount);
+        var now = DateTimeOffset.UtcNow;
+        string? error = BidRules.Validate(amount, endTime, now);
         if (error is not null)
             return (null, error, true);
 
-        var now = DateTimeOffset.UtcNow;
         await using var insert = new MySqlCommand("""
             INSERT INTO bids (amount, time, buyer_id, auction_id)
             VALUES (@amount, @time, @buyer, @auction);
