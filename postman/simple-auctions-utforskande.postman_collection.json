@@ -1,0 +1,306 @@
+{
+  "info": {
+    "name": "Simple Auctions - Utforskande",
+    "description": "Utforskande testning av det befintliga API:t. Kör Setup först. Postman har bara en sessionscookie åt gången: den du loggade in som sist gäller.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "auctionId", "value": "" },
+    { "key": "shortAuctionId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "00 - Setup",
+      "item": [
+        {
+          "name": "Registrera säljare",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/users",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"saljare@test.se\",\n  \"password\": \"test123\"\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Registrera köpare",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/users",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"kopare@test.se\",\n  \"password\": \"test123\"\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Login säljare",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"saljare@test.se\",\n  \"password\": \"test123\"\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Login köpare",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"kopare@test.se\",\n  \"password\": \"test123\"\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Vem är inloggad?",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/auth/login" }
+        },
+        {
+          "name": "Logga ut",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/auth/login" }
+        },
+        {
+          "name": "Skapa auktion (som säljare)",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "if (pm.response.code === 201) {",
+                "  pm.collectionVariables.set(\"auctionId\", pm.response.json().id);",
+                "}"
+              ] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Racercykel Crescent\",\n  \"endTime\": \"2026-12-31T18:00:00Z\"\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Visa auktion",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/auctions/{{auctionId}}" }
+        },
+        {
+          "name": "Lista auktioner",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/auctions" }
+        }
+      ]
+    },
+    {
+      "name": "TM-01 Dubblett av auktion (som säljare)",
+      "item": [
+        {
+          "name": "Skapa auktion 1",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Dubblettcykel\",\n  \"endTime\": \"2026-12-31T18:00:00Z\"\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Skapa auktion 2 (identisk)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Dubblettcykel\",\n  \"endTime\": \"2026-12-31T18:00:00Z\"\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Lista auktioner",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/auctions" }
+        }
+      ]
+    },
+    {
+      "name": "TM-02..05 Felaktiga bud (som köpare)",
+      "item": [
+        {
+          "name": "TM-02 Bud 0 kr",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions/{{auctionId}}/bids",
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 0\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "TM-03 Negativt bud",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions/{{auctionId}}/bids",
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": -100\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "TM-04 steg 1: Bud 500",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions/{{auctionId}}/bids",
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 500\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "TM-04 steg 2: Lägre bud 300",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions/{{auctionId}}/bids",
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 300\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "TM-05 Lika bud 500",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions/{{auctionId}}/bids",
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 500\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Visa auktion (kolla currentPrice och bids)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/auctions/{{auctionId}}" }
+        }
+      ]
+    },
+    {
+      "name": "TM-06 Bud på egen auktion (som säljare)",
+      "item": [
+        {
+          "name": "Bud 600 som säljaren",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions/{{auctionId}}/bids",
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 600\n}", "options": { "raw": { "language": "json" } } }
+          }
+        }
+      ]
+    },
+    {
+      "name": "TM-07 Bud efter sluttid",
+      "item": [
+        {
+          "name": "Steg 1: Skapa kort auktion (som säljare, sluttid om 2 min)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": [
+                "const end = new Date(Date.now() + 2 * 60 * 1000).toISOString();",
+                "pm.collectionVariables.set(\"shortEndTime\", end);"
+              ] }
+            },
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "if (pm.response.code === 201) {",
+                "  pm.collectionVariables.set(\"shortAuctionId\", pm.response.json().id);",
+                "}"
+              ] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Kort auktion\",\n  \"endTime\": \"{{shortEndTime}}\"\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Steg 2: Bud 500 innan sluttid (som köpare)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions/{{shortAuctionId}}/bids",
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 500\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Steg 4: Bud 600 EFTER sluttid (vänta 2 min först)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions/{{shortAuctionId}}/bids",
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 600\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Steg 5: Visa auktion (kolla ended och winnerId)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/auctions/{{shortAuctionId}}" }
+        }
+      ]
+    },
+    {
+      "name": "TM-08 Bud utan inloggning",
+      "item": [
+        {
+          "name": "Logga ut",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/auth/login" }
+        },
+        {
+          "name": "Bud 700 utan inloggning",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions/{{auctionId}}/bids",
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 700\n}", "options": { "raw": { "language": "json" } } }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gränsvärden (som köpare)",
+      "item": [
+        {
+          "name": "Bud 0.01",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions/{{auctionId}}/bids",
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 0.01\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Bud med tre decimaler 500.999",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions/{{auctionId}}/bids",
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 500.999\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Bud med text abc",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions/{{auctionId}}/bids",
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": \"abc\"\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Bud utan amount",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions/{{auctionId}}/bids",
+            "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Bud väldigt stort 99999999999",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auctions/{{auctionId}}/bids",
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 99999999999\n}", "options": { "raw": { "language": "json" } } }
+          }
+        }
+      ]
+    }
+  ]
+}
