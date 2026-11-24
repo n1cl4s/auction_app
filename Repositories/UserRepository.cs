@@ -1,3 +1,4 @@
+
 using MySqlConnector;
 using SimpleAuctions.Models;
 
@@ -12,12 +13,21 @@ public class UserRepository(IConfiguration configuration)
     {
         await using var connection = new MySqlConnection(connectionString);
         await connection.OpenAsync();
+
         await using var command = new MySqlCommand(
-            "SELECT id, email, password_hash FROM users WHERE email = @email;", connection);
+            "SELECT id, email, password_hash, is_admin FROM users WHERE email = @email;", connection);
+
         command.Parameters.AddWithValue("@email", email);
+
         await using var reader = await command.ExecuteReaderAsync();
+
         return await reader.ReadAsync()
-            ? new User(reader.GetInt32("id"), reader.GetString("email"), reader.GetString("password_hash"))
+            ? new User(
+                reader.GetInt32("id"),
+                reader.GetString("email"),
+                reader.GetString("password_hash"),
+                reader.GetBoolean(reader.GetOrdinal("is_admin"))
+            )
             : null;
     }
 
@@ -25,12 +35,21 @@ public class UserRepository(IConfiguration configuration)
     {
         await using var connection = new MySqlConnection(connectionString);
         await connection.OpenAsync();
+
         await using var command = new MySqlCommand(
-            "SELECT id, email, password_hash FROM users WHERE id = @id;", connection);
+            "SELECT id, email, password_hash, is_admin FROM users WHERE id = @id;", connection);
+
         command.Parameters.AddWithValue("@id", id);
+
         await using var reader = await command.ExecuteReaderAsync();
+
         return await reader.ReadAsync()
-            ? new User(reader.GetInt32("id"), reader.GetString("email"), reader.GetString("password_hash"))
+            ? new User(
+                reader.GetInt32("id"),
+                reader.GetString("email"),
+                reader.GetString("password_hash"),
+                reader.GetBoolean(reader.GetOrdinal("is_admin"))
+            )
             : null;
     }
 
@@ -38,11 +57,15 @@ public class UserRepository(IConfiguration configuration)
     {
         await using var connection = new MySqlConnection(connectionString);
         await connection.OpenAsync();
+
         await using var command = new MySqlCommand(
             "INSERT INTO users (email, password_hash) VALUES (@email, @password);", connection);
+
         command.Parameters.AddWithValue("@email", email);
         command.Parameters.AddWithValue("@password", passwordHash);
+
         await command.ExecuteNonQueryAsync();
+
         return new User(checked((int)command.LastInsertedId), email, passwordHash);
     }
 }
