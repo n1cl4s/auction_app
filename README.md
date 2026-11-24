@@ -26,6 +26,12 @@ dotnet run
 
 The API runs at `http://localhost:5000` with the included development profile. Configuration can also be supplied through the `ConnectionStrings__AuctionDatabase` environment variable. Do not commit real connection credentials.
 
+For a fresh car-auction database, [Database/car-auctions.sql](Database/car-auctions.sql) creates `simple_car_auctions` with additional car and price fields, image references, and a table for Buy Now purchases. Grant the application database account access to this database and change the connection string to use it. The script does not migrate existing tables.
+
+The additional auction fields are nullable so the current API can still create auctions. Image files must be stored separately; `auction_images` stores their paths and display order. `buy_now_purchases` records the buyer, price and UTC purchase time, with at most one purchase per auction.
+
+The API does not yet use these fields or tables, save images, or enforce starting-price and Buy Now rules. In particular, future Buy Now and bidding operations must coordinate transactionally to prevent conflicting outcomes.
+
 ## Tests
 
 The tests are in `SimpleAuctions.Tests` and use a separate MySQL 8.4 container. They require the .NET 10 SDK and a running Docker installation; no local MySQL server or test database needs to be configured.

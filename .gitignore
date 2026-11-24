@@ -2,4 +2,5 @@
 /obj
 **/bin/
 **/obj/
-/Database
+/Database/*
+!/Database/car-auctions.sql
