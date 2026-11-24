@@ -25,18 +25,18 @@ public sealed class BidApiTests(AuctionApiFixture fixture)
         var auctionId = int.Parse(auctionUrl.Split('/').Last());
         await TestData.RegisterAndLoginAsync(buyer, TestData.UniqueEmail());
 
-        using var bid = await buyer.PostAsJsonAsync($"/api/auctions/{auctionId}/bids", new { amount = 25.50m });
+        using var bid = await buyer.PostAsJsonAsync($"/api/auctions/{auctionId}/bids", new { amount = 1000m });
         Assert.Equal(HttpStatusCode.Created, bid.StatusCode);
 
         using var bidHistory = await buyer.GetAsync($"/api/auctions/{auctionId}/bids");
         Assert.Equal(HttpStatusCode.OK, bidHistory.StatusCode);
         using var historyJson = JsonDocument.Parse(await bidHistory.Content.ReadAsStringAsync());
         var savedBid = Assert.Single(historyJson.RootElement.EnumerateArray());
-        Assert.Equal(25.50m, savedBid.GetProperty("amount").GetDecimal());
+        Assert.Equal(1000m, savedBid.GetProperty("amount").GetDecimal());
 
         using var auction = await buyer.GetAsync(auctionUrl);
         using var auctionJson = JsonDocument.Parse(await auction.Content.ReadAsStringAsync());
-        Assert.Equal(25.50m, auctionJson.RootElement.GetProperty("currentPrice").GetDecimal());
+        Assert.Equal(1000m, auctionJson.RootElement.GetProperty("currentPrice").GetDecimal());
     }
 
     [Fact]

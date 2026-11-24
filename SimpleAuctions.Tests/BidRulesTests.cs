@@ -49,6 +49,17 @@ public void OwnAuctionBidTest()
 
 }
 
+[Fact]
+public void OnlyIntBidTest()
+{
+    var endTime = new DateTimeOffset(2026, 12, 31, 18, 0, 0, TimeSpan.Zero);
+    var now = endTime.AddHours(-1);
+
+    string? result = BidRules.Validate(100.50m, endTime, now, 1, 2);
+
+    Assert.NotNull(result);
+}
+
 
 }
 

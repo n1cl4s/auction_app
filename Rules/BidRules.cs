@@ -10,8 +10,8 @@ public static class BidRules
         if (now >= endTime)
         return "Auction has ended";
 
-        if (decimal.Round(amount, 2) != amount)
-            return "Amount must have at most two decimal places.";
+        if (decimal.Truncate(amount) != amount)
+            return "Amount must be in whole kronor";
 
         if (amount <= 0)
             return "Amount must be greater than zero.";
