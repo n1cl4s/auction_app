@@ -26,6 +26,18 @@ dotnet run
 
 API:et kör på `http://localhost:5000` med den medföljande utvecklingsprofilen. Konfiguration kan också ges med miljövariabeln `ConnectionStrings__AuctionDatabase`. Inga riktiga anslutningsuppgifter ska checkas in.
 
+## Tester
+
+Testerna finns i `SimpleAuctions.Tests` och använder en separat MySQL 8.4-container. De kräver .NET 10 SDK och att Docker körs; ingen lokal MySQL-server eller testdatabas behöver konfigureras.
+
+Kör hela testsviten från projektroten:
+
+```bash
+dotnet test SimpleAuctions.slnx
+```
+
+Varje test får en egen API-klient, och testdatabasen töms mellan testerna.
+
 ## Struktur
 
 | Del | Ansvar |

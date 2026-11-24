@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="SimpleAuctions.csproj" />
+  <Project Path="SimpleAuctions.Tests/SimpleAuctions.Tests.csproj" />
+</Solution>
