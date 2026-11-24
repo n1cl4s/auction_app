@@ -71,6 +71,17 @@ public void MinRaiseTest()
     Assert.NotNull(result);
 }
 
+[Fact]
+public void MinRaiseOkTest()
+{
+    var endTime = new DateTimeOffset(2026, 12, 31, 18, 0, 0, TimeSpan.Zero);
+    var now = endTime.AddHours(-1);
+
+    string? result = BidRules.Validate(6000m, endTime, now, 1, 2, 5000m);
+
+    Assert.Null(result);
+}
+
 
 }
 
