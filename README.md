@@ -1,93 +1,106 @@
 # Simple Auctions
 
-En liten startpunkt för kursprojektet i **Test, integration, leverans**. C#/.NET 10 Minimal API, MySQL och explicita SQL-frågor med MySqlConnector. Strukturen följer [MovieAPI](https://github.com/no92one/MovieAPI) och kursguiderna om REST och sessionsinloggning.
+A small starting point for the **Testing, Integration, Delivery** course project. A C#/.NET 10 Minimal API with MySQL and explicit SQL queries using MySqlConnector. The structure follows [MovieAPI](https://github.com/no92one/MovieAPI) and the course guides on REST and session login.
 
-## Kom igång
+## Getting started
 
-Du behöver .NET 10 SDK och MySQL 8.0.16 eller senare (exempelvis MySQL 8.4).
+You need the .NET 10 SDK and MySQL 8.0.16 or later (for example, MySQL 8.4).
 
-1. Klona repositoryt och gå till projektmappen.
-2. Kör `Database/script.sql` i din SQL-klient. Skriptet skapar databas och tabeller utan att radera befintlig data.
-3. Skapa ett separat databaskonto. Kör med ett administratörskonto och välj ett eget lösenord:
+1. Clone the repository and go to the project directory.
+2. Run `Database/script.sql` in your SQL client. The script creates the database and tables without deleting existing data.
+3. Create a separate database account. Run this with an administrator account and choose your own password:
 
 ```sql
-CREATE USER 'auctionuser'@'localhost' IDENTIFIED BY 'byt-till-eget-losenord';
+CREATE USER 'auctionuser'@'localhost' IDENTIFIED BY 'choose-your-own-password';
 GRANT SELECT, INSERT, UPDATE, DELETE ON simple_auctions.* TO 'auctionuser'@'localhost';
 ```
 
-Anpassa host om MySQL körs i exempelvis Docker.
+Adjust the host if MySQL runs in Docker, for example.
 
-4. Konfigurera lokal anslutning från projektmappen:
+4. Configure the local connection from the project directory:
 
 ```bash
-dotnet user-secrets set "ConnectionStrings:AuctionDatabase" "Server=localhost;Port=3306;Database=simple_auctions;User ID=auctionuser;Password=byt-till-eget-losenord;"
+dotnet user-secrets set "ConnectionStrings:AuctionDatabase" "Server=localhost;Port=3306;Database=simple_auctions;User ID=auctionuser;Password=choose-your-own-password;"
 dotnet run
 ```
 
-API:et kör på `http://localhost:5000` med den medföljande utvecklingsprofilen. Konfiguration kan också ges med miljövariabeln `ConnectionStrings__AuctionDatabase`. Inga riktiga anslutningsuppgifter ska checkas in.
+The API runs at `http://localhost:5000` with the included development profile. Configuration can also be supplied through the `ConnectionStrings__AuctionDatabase` environment variable. Do not commit real connection credentials.
 
-## Struktur
+## Tests
 
-| Del | Ansvar |
+The tests are in `SimpleAuctions.Tests` and use a separate MySQL 8.4 container. They require the .NET 10 SDK and a running Docker installation; no local MySQL server or test database needs to be configured.
+
+Run the entire test suite from the project root:
+
+```bash
+dotnet test SimpleAuctions.slnx
+```
+
+Each test gets its own API client, and the test database is cleared between tests.
+Read more about the tests and the solution file in [Test.md](Test.md).
+
+## Structure
+
+| Part | Responsibility |
 | --- | --- |
-| `Program.cs` | Konfiguration, DI, session och registrering av endpoints |
-| `Models/` | User, Auction och Bid som records |
-| `DTOs/` | Data in till API:et och användarsvar utan lösenordshash |
-| `Endpoints/` | HTTP, session, grundvalidering och svar |
-| `Repositories/` | Parameteriserad SQL och mappning från MySQL |
-| `Rules/BidRules.cs` | Budregler som kan testas utan databas |
-| `Database/script.sql` | Databas och tre tabeller |
+| `Program.cs` | Configuration, DI, sessions and endpoint registration |
+| `Models/` | User, Auction and Bid records |
+| `DTOs/` | API input and user responses without password hashes |
+| `Endpoints/` | HTTP, sessions, basic validation and responses |
+| `Repositories/` | Parameterized SQL and mapping from MySQL |
+| `Rules/BidRules.cs` | Bid rules that can be tested without a database |
+| `Database/script.sql` | Database and three tables |
 
-En budläggning går från endpoint till BidRepository, som kontrollerar att auktionen finns, anropar `BidRules.Validate(amount)` och sparar budet. Budreglerna är avsiktligt ofullständiga: studenterna ska undersöka och vidareutveckla dem.
+A bid goes from the endpoint to BidRepository, which checks that the auction exists, calls `BidRules.Validate(amount)` and saves the bid. The bid rules are intentionally incomplete: students should investigate and extend them.
 
-## Databas och regler
+## Database and rules
 
-| Tabell | Kolumner |
+| Table | Columns |
 | --- | --- |
 | users | id, email (unik), password_hash |
 | auctions | id, name, end_time, seller_id |
 | bids | id, amount, time, buyer_id, auction_id |
 
-- Auktioner startar direkt och måste ha namn och en framtida sluttid.
-- Budregel att beloppet får ha högst två decimaler.
-- Inloggning krävs för att skapa auktioner och bud.
-- Alla tider lagras i UTC. Skicka `endTime` som ISO 8601 med `Z` eller explicit offset.
-- Säljare och köpare tas från sessionen. Budets tid sätts av servern.
-- Auktionens status härleds från tiden.
-- Det finns inga startpriser, reservationspriser, dolda bud, adminroller, ändrings-/raderingsfunktioner eller alternativa auktionstyper.
+- Auctions start immediately and must have a name and a future end time.
+- The bid amount may have at most two decimal places.
+- Login is required to create auctions and bids.
+- All times are stored in UTC. Send `endTime` as ISO 8601 with `Z` or an explicit offset.
+- Seller and buyer identities come from the session. The server sets the bid time.
+- Auction status is derived from the time.
+- There are no starting prices, reserve prices, hidden bids, admin roles, update/delete functions or alternative auction types.
 
-`GET /api/auctions/{id}` visar även `ended`, `currentPrice`, `winnerId` och `bids`. Pris är `null` före första budet och vinnare är `null` före avslut eller om bud saknas. Dessa värden lagras inte separat.
+`GET /api/auctions/{id}` also shows `ended`, `currentPrice`, `winnerId` and `bids`. The price is `null` before the first bid and the winner is `null` before the auction ends or if there are no bids. These values are not stored separately.
 
 ## Endpoints
 
-| Metod | URL | Funktion |
+| Method | URL | Function |
 | --- | --- | --- |
-| POST | /api/users | Registrera användare |
-| GET | /api/users/{id} | Visa egen användare (inloggning krävs) |
-| POST | /api/auth/login | Logga in |
-| GET | /api/auth/login | Kontrollera inloggning |
-| DELETE | /api/auth/login | Logga ut |
-| GET | /api/auctions | Lista auktioner |
-| GET | /api/auctions/{id} | Visa auktion, bud och resultat |
-| POST | /api/auctions | Skapa auktion |
-| GET | /api/auctions/{id}/bids | Visa öppna bud |
-| POST | /api/auctions/{id}/bids | Lägg bud |
+| POST | /api/users | Create a user |
+| GET | /api/users/{id} | View your own user (login required) |
+| POST | /api/auth/login | Log in |
+| GET | /api/auth/login | Check login status |
+| DELETE | /api/auth/login | Log out |
+| GET | /api/auctions | List auctions |
+| GET | /api/auctions/{id} | View auction, bids and result |
+| POST | /api/auctions | Create an auction |
+| GET | /api/auctions/{id}/bids | View bids |
+| POST | /api/auctions/{id}/bids | Place a bid |
 
-Exempel på request bodies:
+Example request bodies:
 
 ```json
 { "email": "seller@example.test", "password": "DemoPassword123!" }
 ```
 
-Samma format används för registrering och inloggning.
+The same format is used for user creation and login.
 
 ```json
-{ "name": "En gammal synt", "endTime": "2030-01-01T12:00:00Z" }
+{ "name": "An old synthesizer", "endTime": "2030-01-01T12:00:00Z" }
 ```
 
-## Avgränsning
+## Scope
 
-Sessionsinloggningen följer kursens pedagogiska exempel med `HttpContext.Session`. Lösenord hashats med ASP.NET Cores `PasswordHasher`, och hash returneras aldrig till klienten. Sessioner finns i processens minne, försvinner vid omstart och delas inte mellan instanser. Produktionsläge kräver HTTPS för cookien. Produktionsautentisering, sessionsrotation, CSRF-skydd och inloggningsbegränsning behöver behandlas före verklig användning. 
+Session login follows the course's educational example using `HttpContext.Session`. Passwords are hashed with ASP.NET Core's `PasswordHasher`, and hashes are never returned to the client. Sessions are held in process memory, disappear on restart and are not shared between instances. Production mode requires HTTPS for the cookie. Production authentication, session rotation, CSRF protection and login rate limiting need to be addressed before real-world use.
 
-Vidareutveckla startpunkten med testning, dokumentation och små funktionella steg enligt projektuppgiften.
+Extend this starting point with testing, documentation and small functional steps according to the project assignment.
 # auction_app
