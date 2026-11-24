@@ -29,3 +29,5 @@ app.MapAuthEndpoints();
 app.MapAuctionEndpoints();
 app.MapBidEndpoints();
 app.Run();
+
+public partial class Program { }
