@@ -63,4 +63,23 @@ public sealed class BidApiTests(AuctionApiFixture fixture)
             $"/api/auctions/{auctionId}/bids", new { amount = 12.345m });
         Assert.Equal(HttpStatusCode.BadRequest, invalidBid.StatusCode);
     }
+
+    [Fact]
+public async Task OwnBidForbiddenTest()
+{
+    await fixture.ResetDatabaseAsync();
+    using var seller = fixture.CreateClient();
+    await TestData.RegisterAndLoginAsync(seller, TestData.UniqueEmail());
+
+    var auctionResponse = await seller.PostAsJsonAsync("/api/auctions", new
+    {
+        name = $"Auction-{Guid.NewGuid():N}",
+        endTime = DateTimeOffset.UtcNow.AddDays(1)
+    });
+    var auctionId = int.Parse(auctionResponse.Headers.Location!.ToString().Split('/').Last());
+
+    using var bid = await seller.PostAsJsonAsync($"/api/auctions/{auctionId}/bids", new { amount = 100m });
+
+    Assert.Equal(HttpStatusCode.Forbidden, bid.StatusCode);
+}
 }

@@ -27,7 +27,7 @@ public class BidRepository(IConfiguration configuration)
         return bids;
     }
 
-    public async Task<(Bid? Bid, string? Error, bool Found)> Create(int auctionId, decimal amount, int buyerId)
+    public async Task<(Bid? Bid, string? Error, bool Found, bool Forbidden)> Create(int auctionId, decimal amount, int buyerId)
     {
         await using var connection = new MySqlConnection(connectionString);
         await connection.OpenAsync();
@@ -39,15 +39,16 @@ public class BidRepository(IConfiguration configuration)
             command.Parameters.AddWithValue("@id", auctionId);
             await using var reader = await command.ExecuteReaderAsync();
             if (!await reader.ReadAsync())
-                return (null, "Auction not found.", false);
+                return (null, "Auction not found.", false, false);
             endTime = new DateTimeOffset(DateTime.SpecifyKind(reader.GetDateTime("end_time"), DateTimeKind.Utc));
             sellerId = reader.GetInt32("seller_id");
         }
-
+        if (sellerId == buyerId)
+        return (null, "You cannot bid on your own auction.", true, true);
         var now = DateTimeOffset.UtcNow;
         string? error = BidRules.Validate(amount, endTime, now, sellerId, buyerId);
         if (error is not null)
-            return (null, error, true);
+            return (null, error, true, false);
 
         await using var insert = new MySqlCommand("""
             INSERT INTO bids (amount, time, buyer_id, auction_id)
@@ -59,6 +60,6 @@ public class BidRepository(IConfiguration configuration)
         insert.Parameters.AddWithValue("@auction", auctionId);
         await insert.ExecuteNonQueryAsync();
         var bid = new Bid(checked((int)insert.LastInsertedId), amount, now, buyerId, auctionId);
-        return (bid, null, true);
+        return (bid, null, true, false);
     }
 }

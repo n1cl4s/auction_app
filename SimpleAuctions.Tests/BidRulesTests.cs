@@ -46,6 +46,9 @@ public void OwnAuctionBidTest()
     string? result = BidRules.Validate(100, endTime, now, sellerId, buyerId);
 
     Assert.NotNull(result);
+
 }
+
+
 }
 
