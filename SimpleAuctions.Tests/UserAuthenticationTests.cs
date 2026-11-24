@@ -1,3 +1,4 @@
+
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -17,9 +18,14 @@ public sealed class UserAuthenticationTests(AuctionApiFixture fixture)
         using var unauthenticated = await client.GetAsync("/api/auth/login");
         Assert.Equal(HttpStatusCode.Unauthorized, unauthenticated.StatusCode);
 
+        // Verify that unauthenticated users cannot access admin endpoints
+        using var unauthenticatedAdmin = await client.GetAsync("/api/auth/admin");
+        Assert.Equal(HttpStatusCode.Unauthorized, unauthenticatedAdmin.StatusCode);
+
         using var registration = await client.PostAsJsonAsync(
             "/api/users", new { email, password = TestData.Password });
         Assert.Equal(HttpStatusCode.Created, registration.StatusCode);
+
         using var registrationJson = JsonDocument.Parse(await registration.Content.ReadAsStringAsync());
         Assert.Equal(email, registrationJson.RootElement.GetProperty("email").GetString());
         Assert.False(registrationJson.RootElement.TryGetProperty("passwordHash", out _));
@@ -32,8 +38,13 @@ public sealed class UserAuthenticationTests(AuctionApiFixture fixture)
             "/api/auth/login", new { email, password = TestData.Password });
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
 
+        // Verify that regular users cannot access admin endpoints
+        using var adminAccess = await client.GetAsync("/api/auth/admin");
+        Assert.Equal(HttpStatusCode.Forbidden, adminAccess.StatusCode);
+
         using var profile = await client.GetAsync("/api/auth/login");
         Assert.Equal(HttpStatusCode.OK, profile.StatusCode);
+
         using var profileJson = JsonDocument.Parse(await profile.Content.ReadAsStringAsync());
         Assert.Equal(email, profileJson.RootElement.GetProperty("user").GetProperty("email").GetString());
 
