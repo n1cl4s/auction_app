@@ -1,3 +1,4 @@
+
 -- Kör med ett konto som får skapa databas/tabeller. Befintlig data raderas inte.
 CREATE DATABASE IF NOT EXISTS simple_auctions CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE simple_auctions;
@@ -5,7 +6,8 @@ USE simple_auctions;
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(254) NOT NULL UNIQUE,
-    password_hash VARCHAR(512) NOT NULL
+    password_hash VARCHAR(512) NOT NULL,
+    is_admin BOOLEAN NOT NULL DEFAULT FALSE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS auctions (
