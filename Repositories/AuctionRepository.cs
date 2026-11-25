@@ -25,10 +25,10 @@ public class AuctionRepository(IConfiguration configuration)
         return auctions;
     }
 
-    public async Task<Auction?> GetById(int id)
+    public async Task<Auction?> GetById(int id, CancellationToken cancellationToken = default)
     {
         await using var connection = new MySqlConnection(connectionString);
-        await connection.OpenAsync();
+        await connection.OpenAsync(cancellationToken);
         await using var command = new MySqlCommand(
             """
             SELECT id, name, end_time, seller_id, car_model, model_year, mileage_km,
@@ -36,8 +36,8 @@ public class AuctionRepository(IConfiguration configuration)
             FROM auctions WHERE id = @id;
             """, connection);
         command.Parameters.AddWithValue("@id", id);
-        await using var reader = await command.ExecuteReaderAsync();
-        return await reader.ReadAsync() ? ReadAuction(reader) : null;
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        return await reader.ReadAsync(cancellationToken) ? ReadAuction(reader) : null;
     }
 
     public async Task<Auction> Create(

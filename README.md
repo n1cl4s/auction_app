@@ -28,6 +28,14 @@ dotnet run
 
 The API runs at `http://localhost:5000` with the included development profile. Configuration can also be supplied through the `ConnectionStrings__AuctionDatabase` environment variable. Do not commit real connection credentials.
 
+## Auction images API
+
+- `POST /api/auctions/{id}/images` stores one raw PNG or JPEG image (maximum 5 MiB). The request must be from the authenticated auction seller and use the matching image content type.
+- `GET /api/auctions/{id}/images` returns public image metadata and download URLs.
+- `GET /api/auctions/{id}/images/{imageId}` returns the image bytes.
+
+See [AuctionImages.http](AuctionImages.http) for example requests. Buy Now purchase persistence is available through the repository, but its REST endpoint is intentionally left for the separate auction-rules implementation.
+
 ## Tests
 
 The tests are in `SimpleAuctions.Tests` and use a separate MySQL 8.4 container. They require the .NET 10 SDK and a running Docker installation; no local MySQL server or test database needs to be configured.

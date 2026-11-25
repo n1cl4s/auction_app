@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -7,6 +8,9 @@ namespace SimpleAuctions.Tests;
 [Collection(AuctionApiCollection.Name)]
 public sealed class AuctionApiTests(AuctionApiFixture fixture)
 {
+    private static readonly byte[] PngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+    private static readonly byte[] JpegSignature = [0xff, 0xd8, 0xff];
+
     [Fact]
     public async Task AuthenticatedSellerCreatesAuctionThatCanBeReadBack()
     {
@@ -91,6 +95,105 @@ public sealed class AuctionApiTests(AuctionApiFixture fixture)
             auction => auction.GetProperty("name").GetString() == auctionName);
         Assert.Equal(request.mileageKm, listedAuction.GetProperty("mileageKm").GetUInt32());
         Assert.Equal(request.fuelType, listedAuction.GetProperty("fuelType").GetString());
+    }
+
+    [Fact]
+    public async Task AuctionOwnerCanUploadAndRetrieveImage()
+    {
+        await fixture.ResetDatabaseAsync();
+        using var owner = fixture.CreateClient();
+        await TestData.RegisterAndLoginAsync(owner, TestData.UniqueEmail());
+        using var createAuction = await owner.PostAsJsonAsync("/api/auctions", new
+        {
+            name = "Image test car",
+            endTime = DateTimeOffset.UtcNow.AddDays(1)
+        });
+        Assert.Equal(HttpStatusCode.Created, createAuction.StatusCode);
+        using var auctionJson = JsonDocument.Parse(await createAuction.Content.ReadAsStringAsync());
+        var auctionId = auctionJson.RootElement.GetProperty("id").GetInt32();
+        var imagePath = $"/api/auctions/{auctionId}/images";
+
+        using var anonymous = fixture.CreateClient();
+        using var anonymousContent = new ByteArrayContent(PngSignature);
+        anonymousContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+        using var anonymousUpload = await anonymous.PostAsync(imagePath, anonymousContent);
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymousUpload.StatusCode);
+
+        using var otherUser = fixture.CreateClient();
+        await TestData.RegisterAndLoginAsync(otherUser, TestData.UniqueEmail());
+        using var otherUserContent = new ByteArrayContent(PngSignature);
+        otherUserContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+        using var forbiddenUpload = await otherUser.PostAsync(imagePath, otherUserContent);
+        Assert.Equal(HttpStatusCode.Forbidden, forbiddenUpload.StatusCode);
+
+        using var content = new ByteArrayContent(PngSignature);
+        content.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+        using var upload = await owner.PostAsync(imagePath, content);
+        Assert.Equal(HttpStatusCode.Created, upload.StatusCode);
+        var imageResponse = await upload.Content.ReadFromJsonAsync<JsonElement>();
+        var imageId = imageResponse.GetProperty("id").GetInt32();
+        Assert.Equal($"{imagePath}/{imageId}", imageResponse.GetProperty("url").GetString());
+
+        using var jpegContent = new ByteArrayContent(JpegSignature);
+        jpegContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+        using var jpegUpload = await owner.PostAsync(imagePath, jpegContent);
+        Assert.Equal(HttpStatusCode.Created, jpegUpload.StatusCode);
+        var jpegResponse = await jpegUpload.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(1u, jpegResponse.GetProperty("displayOrder").GetUInt32());
+
+        using var list = await owner.GetAsync(imagePath);
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        var imageList = await list.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(2, imageList.GetArrayLength());
+
+        using var download = await owner.GetAsync($"{imagePath}/{imageId}");
+        Assert.Equal(HttpStatusCode.OK, download.StatusCode);
+        Assert.Equal("image/png", download.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(PngSignature, await download.Content.ReadAsByteArrayAsync());
+    }
+
+    [Fact]
+    public async Task AuctionImageUploadRejectsUnsupportedContentType()
+    {
+        await fixture.ResetDatabaseAsync();
+        using var owner = fixture.CreateClient();
+        await TestData.RegisterAndLoginAsync(owner, TestData.UniqueEmail());
+        using var createAuction = await owner.PostAsJsonAsync("/api/auctions", new
+        {
+            name = "Image test car",
+            endTime = DateTimeOffset.UtcNow.AddDays(1)
+        });
+        Assert.Equal(HttpStatusCode.Created, createAuction.StatusCode);
+        using var auctionJson = JsonDocument.Parse(await createAuction.Content.ReadAsStringAsync());
+        var auctionId = auctionJson.RootElement.GetProperty("id").GetInt32();
+        using var content = new ByteArrayContent(PngSignature);
+        content.Headers.ContentType = new MediaTypeHeaderValue("image/gif");
+
+        using var response = await owner.PostAsync($"/api/auctions/{auctionId}/images", content);
+
+        Assert.Equal(HttpStatusCode.UnsupportedMediaType, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AuctionImageUploadRejectsOversizedContent()
+    {
+        await fixture.ResetDatabaseAsync();
+        using var owner = fixture.CreateClient();
+        await TestData.RegisterAndLoginAsync(owner, TestData.UniqueEmail());
+        using var createAuction = await owner.PostAsJsonAsync("/api/auctions", new
+        {
+            name = "Image test car",
+            endTime = DateTimeOffset.UtcNow.AddDays(1)
+        });
+        Assert.Equal(HttpStatusCode.Created, createAuction.StatusCode);
+        using var auctionJson = JsonDocument.Parse(await createAuction.Content.ReadAsStringAsync());
+        var auctionId = auctionJson.RootElement.GetProperty("id").GetInt32();
+        using var content = new ByteArrayContent(new byte[5 * 1024 * 1024 + 1]);
+        content.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+
+        using var response = await owner.PostAsync($"/api/auctions/{auctionId}/images", content);
+
+        Assert.Equal((HttpStatusCode)413, response.StatusCode);
     }
 
     [Fact]

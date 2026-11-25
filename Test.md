@@ -58,6 +58,9 @@ The tests check behavior that is currently implemented:
 4. **Placing a bid:** A buyer places a bid that can be read back from bid history and appears as the auction's current price.
 5. **Bid validation:** An anonymous request is rejected, and a bid with more than two decimal places is rejected.
 
-6. **Test database reset:** Image bytes can be stored and read back, and data in the car-auction, image, purchase, bid and user tables can be removed between tests.
+6. **Car auction fields:** Model year, mileage, transmission, fuel type, description, color and prices are stored and returned by the API.
+7. **Auction images:** The authenticated seller can upload an image; the public image list and download endpoint return its metadata and bytes. Anonymous uploads and unsupported content types are rejected.
+8. **Buy Now persistence:** The repository can store and retrieve a purchase record. Purchase eligibility rules and a public REST endpoint are not implemented here.
+9. **Test database reset:** Data in the car-auction, image, purchase, bid and user tables can be removed between tests.
 
 The tests do not imply that registration or auction rules are complete. For example, the current bid rule only checks decimal places; rules for ended auctions and other bidding restrictions are not covered or enforced by that rule.

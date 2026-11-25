@@ -1,0 +1,17 @@
+@baseUrl = http://localhost:5000
+@auctionId = 1
+@imageId = 1
+@sessionCookie = replace-with-session-cookie-value
+
+### List public auction image metadata
+GET {{baseUrl}}/api/auctions/{{auctionId}}/images
+
+### Upload an image as the auction seller
+POST {{baseUrl}}/api/auctions/{{auctionId}}/images
+Cookie: SimpleAuctions.Session={{sessionCookie}}
+Content-Type: image/png
+
+< ./Database/sample-images/ferrari-812-superfast.png
+
+### Download an auction image
+GET {{baseUrl}}/api/auctions/{{auctionId}}/images/{{imageId}}

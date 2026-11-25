@@ -7,6 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<AuctionRepository>();
 builder.Services.AddScoped<BidRepository>();
+builder.Services.AddScoped<AuctionImageRepository>();
+builder.Services.AddScoped<BuyNowPurchaseRepository>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
@@ -28,6 +30,7 @@ app.MapUserEndpoints();
 app.MapAuthEndpoints();
 app.MapAuctionEndpoints();
 app.MapBidEndpoints();
+app.MapAuctionImageEndpoints();
 app.Run();
 
 public partial class Program { }
