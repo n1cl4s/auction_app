@@ -17,7 +17,7 @@ public sealed class AuctionApiTests(AuctionApiFixture fixture)
         var request = new
         {
             name = auctionName,
-            endTime = DateTimeOffset.UtcNow.AddDays(1)
+            endTime = DateTimeOffset.UtcNow.AddDays(1), startingPrice = 1000m
         };
 
         using var anonymousCreate = await client.PostAsJsonAsync("/api/auctions", request);
@@ -53,7 +53,7 @@ public sealed class AuctionApiTests(AuctionApiFixture fixture)
         using var blankName = await client.PostAsJsonAsync("/api/auctions", new
         {
             name = " ",
-            endTime = DateTimeOffset.UtcNow.AddDays(1)
+            endTime = DateTimeOffset.UtcNow.AddDays(1), startingPrice = 1000m
         });
         Assert.Equal(HttpStatusCode.BadRequest, blankName.StatusCode);
 
@@ -63,5 +63,56 @@ public sealed class AuctionApiTests(AuctionApiFixture fixture)
             endTime = DateTimeOffset.UtcNow.AddDays(-1)
         });
         Assert.Equal(HttpStatusCode.BadRequest, pastEndTime.StatusCode);
+    }
+
+    [Fact]
+    public async Task LowStartPriceTest()
+    {
+    await fixture.ResetDatabaseAsync();
+    using var client = fixture.CreateClient();
+    await TestData.RegisterAndLoginAsync(client, TestData.UniqueEmail());
+
+    using var create = await client.PostAsJsonAsync("/api/auctions", new
+    {
+        name = "Volvo 240",
+        endTime = DateTimeOffset.UtcNow.AddDays(1),
+        startingPrice = 999m
+    });
+
+    Assert.Equal(HttpStatusCode.BadRequest, create.StatusCode);
+    }
+
+    [Fact]
+    public async Task StartPriceOkApiTest()
+    {
+        await fixture.ResetDatabaseAsync();
+        using var client = fixture.CreateClient();
+        await TestData.RegisterAndLoginAsync(client, TestData.UniqueEmail());
+
+        using var create = await client.PostAsJsonAsync("/api/auctions", new
+        {
+            name = "Volvo 240",
+            endTime = DateTimeOffset.UtcNow.AddDays(1),
+            startingPrice = 1000m
+        });
+
+        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+    }
+    
+    [Fact]
+    public async Task DecimalStartPriceTest()
+    {
+        await fixture.ResetDatabaseAsync();
+        using var client = fixture.CreateClient();
+        await TestData.RegisterAndLoginAsync(client, TestData.UniqueEmail());
+
+        using var create = await client.PostAsJsonAsync("/api/auctions", new
+        {
+            name = "Volvo 240",
+            endTime = DateTimeOffset.UtcNow.AddDays(1),
+            startingPrice = 1000.50m
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, create.StatusCode);
     }
 }

@@ -31,6 +31,8 @@ public static class AuctionEndpoints
             if (string.IsNullOrWhiteSpace(data.Name) || data.Name.Trim().Length > 200
                 || data.EndTime <= DateTimeOffset.UtcNow || data.EndTime.Year < 1000)
                 return Results.BadRequest(new { message = "Name (1–200 characters) and a future endTime are required." });
+            if (data.StartingPrice is null || data.StartingPrice < 1000 || decimal.Truncate(data.StartingPrice.Value) !=data.StartingPrice)
+                return Results.BadRequest(new { message = "Starting price must be at least 1000 kr and whole kronor." });
             var auction = await repository.Create(data.Name.Trim(), data.EndTime, sellerId.Value, data.StartingPrice);
             return Results.Created($"/api/auctions/{auction.Id}", auction);
         });
