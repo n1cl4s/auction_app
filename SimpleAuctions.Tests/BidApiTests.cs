@@ -117,4 +117,26 @@ public async Task MissingAuctionBidTest()
 
     Assert.Equal(HttpStatusCode.NotFound, bid.StatusCode);
 }
+
+[Fact]
+public async Task StartPriceApiTest()
+{
+    await fixture.ResetDatabaseAsync();
+    using var seller = fixture.CreateClient();
+    using var buyer = fixture.CreateClient();
+    await TestData.RegisterAndLoginAsync(seller, TestData.UniqueEmail());
+
+    var auctionResponse = await seller.PostAsJsonAsync("/api/auctions", new
+    {
+        name = $"Auction-{Guid.NewGuid():N}",
+        endTime = DateTimeOffset.UtcNow.AddDays(1),
+        startingPrice = 5000m
+    });
+    var auctionId = int.Parse(auctionResponse.Headers.Location!.ToString().Split('/').Last());
+    await TestData.RegisterAndLoginAsync(buyer, TestData.UniqueEmail());
+
+    using var bid = await buyer.PostAsJsonAsync($"/api/auctions/{auctionId}/bids", new { amount = 4999m });
+
+    Assert.Equal(HttpStatusCode.BadRequest, bid.StatusCode);
+}
 }

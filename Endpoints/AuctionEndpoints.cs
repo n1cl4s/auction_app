@@ -31,7 +31,7 @@ public static class AuctionEndpoints
             if (string.IsNullOrWhiteSpace(data.Name) || data.Name.Trim().Length > 200
                 || data.EndTime <= DateTimeOffset.UtcNow || data.EndTime.Year < 1000)
                 return Results.BadRequest(new { message = "Name (1–200 characters) and a future endTime are required." });
-            var auction = await repository.Create(data.Name.Trim(), data.EndTime, sellerId.Value);
+            var auction = await repository.Create(data.Name.Trim(), data.EndTime, sellerId.Value, data.StartingPrice);
             return Results.Created($"/api/auctions/{auction.Id}", auction);
         });
     }

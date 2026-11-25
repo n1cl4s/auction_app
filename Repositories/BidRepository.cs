@@ -33,8 +33,9 @@ public class BidRepository(IConfiguration configuration)
         await connection.OpenAsync();
         DateTimeOffset endTime;
         int sellerId;
+        decimal startPrice;
         await using (var command = new MySqlCommand(
-            "SELECT end_time, seller_id FROM auctions WHERE id = @id;", connection))
+            "SELECT end_time, seller_id, starting_price FROM auctions WHERE id = @id;", connection))
         {
             command.Parameters.AddWithValue("@id", auctionId);
             await using var reader = await command.ExecuteReaderAsync();
@@ -42,6 +43,8 @@ public class BidRepository(IConfiguration configuration)
                 return (null, "Auction not found.", false, false);
             endTime = new DateTimeOffset(DateTime.SpecifyKind(reader.GetDateTime("end_time"), DateTimeKind.Utc));
             sellerId = reader.GetInt32("seller_id");
+            startPrice = reader.IsDBNull(reader.GetOrdinal("starting_price")) ? 0 :
+            reader.GetDecimal("starting_price");
         }
         if (sellerId == buyerId)
         return (null, "You cannot bid on your own auction.", true, true);
@@ -51,7 +54,7 @@ public class BidRepository(IConfiguration configuration)
         var maxValue = await maxCommand.ExecuteScalarAsync();
         decimal? highestBid = maxValue is DBNull ? null : (decimal)maxValue!;
         var now = DateTimeOffset.UtcNow;
-        string? error = BidRules.Validate(amount, endTime, now, sellerId, buyerId, highestBid);
+        string? error = BidRules.Validate(amount, endTime, now, sellerId, buyerId, highestBid, startPrice);
         if (error is not null)
             return (null, error, true, false);
 
