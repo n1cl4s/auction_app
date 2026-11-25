@@ -82,6 +82,28 @@ public void MinRaiseOkTest()
     Assert.Null(result);
 }
 
+[Fact]
+public void StartPriceTest()
+{
+    var endTime = new DateTimeOffset(2026, 12, 31, 18, 0, 0, TimeSpan.Zero);
+    var now = endTime.AddHours(-1);
+
+    string? result = BidRules.Validate(4999m, endTime, now, 1, 2, null, 5000m);
+
+    Assert.NotNull(result);
+}
+
+[Fact]
+public void StartPriceOkTest()
+{
+    var endTime = new DateTimeOffset(2026, 12, 31, 18, 0, 0, TimeSpan.Zero);
+    var now = endTime.AddHours(-1);
+
+    string? result = BidRules.Validate(5000m, endTime, now, 1, 2, null, 5000m);
+
+    Assert.Null(result);
+}
+
 
 }
 
