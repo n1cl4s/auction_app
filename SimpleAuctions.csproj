@@ -9,6 +9,8 @@
     <PackageReference Include="MySqlConnector" Version="3.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Remove="SimpleAuctions.Tests/**/*.cs" />
+    <Compile Remove="SimpleAuctions.Tests/**" />
+    <Content Remove="SimpleAuctions.Tests/**" />
+    <None Remove="SimpleAuctions.Tests/**" />
   </ItemGroup>
 </Project>

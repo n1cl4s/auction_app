@@ -25,18 +25,18 @@ public sealed class BidApiTests(AuctionApiFixture fixture)
         var auctionId = int.Parse(auctionUrl.Split('/').Last());
         await TestData.RegisterAndLoginAsync(buyer, TestData.UniqueEmail());
 
-        using var bid = await buyer.PostAsJsonAsync($"/api/auctions/{auctionId}/bids", new { amount = 25.50m });
+        using var bid = await buyer.PostAsJsonAsync($"/api/auctions/{auctionId}/bids", new { amount = 1000m });
         Assert.Equal(HttpStatusCode.Created, bid.StatusCode);
 
         using var bidHistory = await buyer.GetAsync($"/api/auctions/{auctionId}/bids");
         Assert.Equal(HttpStatusCode.OK, bidHistory.StatusCode);
         using var historyJson = JsonDocument.Parse(await bidHistory.Content.ReadAsStringAsync());
         var savedBid = Assert.Single(historyJson.RootElement.EnumerateArray());
-        Assert.Equal(25.50m, savedBid.GetProperty("amount").GetDecimal());
+        Assert.Equal(1000m, savedBid.GetProperty("amount").GetDecimal());
 
         using var auction = await buyer.GetAsync(auctionUrl);
         using var auctionJson = JsonDocument.Parse(await auction.Content.ReadAsStringAsync());
-        Assert.Equal(25.50m, auctionJson.RootElement.GetProperty("currentPrice").GetDecimal());
+        Assert.Equal(1000m, auctionJson.RootElement.GetProperty("currentPrice").GetDecimal());
     }
 
     [Fact]
@@ -63,4 +63,58 @@ public sealed class BidApiTests(AuctionApiFixture fixture)
             $"/api/auctions/{auctionId}/bids", new { amount = 12.345m });
         Assert.Equal(HttpStatusCode.BadRequest, invalidBid.StatusCode);
     }
+
+    [Fact]
+public async Task OwnBidForbiddenTest()
+{
+    await fixture.ResetDatabaseAsync();
+    using var seller = fixture.CreateClient();
+    await TestData.RegisterAndLoginAsync(seller, TestData.UniqueEmail());
+
+    var auctionResponse = await seller.PostAsJsonAsync("/api/auctions", new
+    {
+        name = $"Auction-{Guid.NewGuid():N}",
+        endTime = DateTimeOffset.UtcNow.AddDays(1)
+    });
+    var auctionId = int.Parse(auctionResponse.Headers.Location!.ToString().Split('/').Last());
+
+    using var bid = await seller.PostAsJsonAsync($"/api/auctions/{auctionId}/bids", new { amount = 100m });
+
+    Assert.Equal(HttpStatusCode.Forbidden, bid.StatusCode);
+}
+
+[Fact]
+public async Task LowRaiseApiTest()
+{
+    await fixture.ResetDatabaseAsync();
+    using var seller = fixture.CreateClient();
+    using var buyer = fixture.CreateClient();
+    await TestData.RegisterAndLoginAsync(seller, TestData.UniqueEmail());
+
+    var auctionResponse = await seller.PostAsJsonAsync("/api/auctions", new
+    {
+        name = $"Auction-{Guid.NewGuid():N}",
+        endTime = DateTimeOffset.UtcNow.AddDays(1)
+    });
+    var auctionId = int.Parse(auctionResponse.Headers.Location!.ToString().Split('/').Last());
+    await TestData.RegisterAndLoginAsync(buyer, TestData.UniqueEmail());
+
+    using var first = await buyer.PostAsJsonAsync($"/api/auctions/{auctionId}/bids", new { amount = 1000m });
+    Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+
+    using var second = await buyer.PostAsJsonAsync($"/api/auctions/{auctionId}/bids", new { amount = 1999m });
+    Assert.Equal(HttpStatusCode.BadRequest, second.StatusCode);
+}
+
+[Fact]
+public async Task MissingAuctionBidTest()
+{
+    await fixture.ResetDatabaseAsync();
+    using var buyer = fixture.CreateClient();
+    await TestData.RegisterAndLoginAsync(buyer, TestData.UniqueEmail());
+
+    using var bid = await buyer.PostAsJsonAsync("/api/auctions/999999/bids", new { amount = 1000m });
+
+    Assert.Equal(HttpStatusCode.NotFound, bid.StatusCode);
+}
 }
