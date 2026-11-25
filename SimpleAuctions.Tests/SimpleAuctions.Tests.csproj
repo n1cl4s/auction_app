@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\Database\script.sql" Link="Database\script.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Database\car-auctions.sql" Link="Database\car-auctions.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
