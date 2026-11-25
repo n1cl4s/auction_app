@@ -7,12 +7,14 @@ A small starting point for the **Testing, Integration, Delivery** course project
 You need the .NET 10 SDK and MySQL 8.0.16 or later (for example, MySQL 8.4).
 
 1. Clone the repository and go to the project directory.
-2. Run `Database/script.sql` in your SQL client. The script creates the database and tables without deleting existing data.
+2. Run `Database/car-auctions.sql` in your SQL client to create the car-auction database and tables. This script is for a fresh database; it does not migrate existing tables.
+
+   To reset a local development database, run `Database/reset-car-auctions.sql` first, then run `Database/car-auctions.sql`. **The reset script deletes all existing data in `simple_car_auctions`; never run it against data you need.**
 3. Create a separate database account. Run this with an administrator account and choose your own password:
 
 ```sql
 CREATE USER 'auctionuser'@'localhost' IDENTIFIED BY 'choose-your-own-password';
-GRANT SELECT, INSERT, UPDATE, DELETE ON simple_auctions.* TO 'auctionuser'@'localhost';
+GRANT SELECT, INSERT, UPDATE, DELETE ON simple_car_auctions.* TO 'auctionuser'@'localhost';
 ```
 
 Adjust the host if MySQL runs in Docker, for example.
@@ -20,7 +22,7 @@ Adjust the host if MySQL runs in Docker, for example.
 4. Configure the local connection from the project directory:
 
 ```bash
-dotnet user-secrets set "ConnectionStrings:AuctionDatabase" "Server=localhost;Port=3306;Database=simple_auctions;User ID=auctionuser;Password=choose-your-own-password;"
+dotnet user-secrets set "ConnectionStrings:AuctionDatabase" "Server=localhost;Port=3306;Database=simple_car_auctions;User ID=auctionuser;Password=choose-your-own-password;"
 dotnet run
 ```
 

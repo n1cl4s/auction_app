@@ -16,6 +16,6 @@ The automated tests use a fresh, isolated MySQL container and create their own d
 
 Use a separate test user as the buyer when testing bids. Different sellers are useful for testing multiple-user scenarios, but one seller is enough for the sample data.
 
-For auctions created through the API, the seller is taken from the logged-in session, not from `@sample_seller_id`. The API does not yet expose all the car-specific fields.
+For auctions created through the API, the seller is taken from the logged-in session, not from `@sample_seller_id`. The API accepts and returns structured model year, mileage in kilometers, transmission, fuel type, description, color, starting price and Buy Now price. The sample descriptions retain their original Swedish mil values, converted to kilometers in the `mileage_km` column. Image operations and Buy Now purchases are not yet exposed.
 
 See [Test.md](Test.md) for image import instructions and how to run the automated tests.
