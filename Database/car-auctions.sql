@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS bids (
 CREATE TABLE IF NOT EXISTS auction_images (
     id INT AUTO_INCREMENT PRIMARY KEY,
     auction_id INT NOT NULL,
-    image_path VARCHAR(2048) NOT NULL,
+    image_data LONGBLOB NOT NULL,
+    content_type VARCHAR(127) NOT NULL,
     display_order INT UNSIGNED NOT NULL DEFAULT 0,
     FOREIGN KEY (auction_id) REFERENCES auctions(id),
     INDEX auction_image_order (auction_id, display_order)
