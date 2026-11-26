@@ -32,18 +32,19 @@ public class AuctionRepository(IConfiguration configuration)
         return await reader.ReadAsync() ? ReadAuction(reader) : null;
     }
 
-    public async Task<Auction> Create(string name, DateTimeOffset endTime, int sellerId, decimal? startingPrice)
+    public async Task<Auction> Create(string name, DateTimeOffset endTime, int sellerId, decimal? startingPrice, decimal? buyNowPrice)
     {
         await using var connection = new MySqlConnection(connectionString);
         await connection.OpenAsync();
         await using var command = new MySqlCommand("""
-            INSERT INTO auctions (name, end_time, seller_id, starting_price) VALUES (@name, @end, @seller, @start);
+            INSERT INTO auctions (name, end_time, seller_id, starting_price, buy_now_price) VALUES (@name, @end, @seller, @start, @buyNow);
             """, connection);
         
         command.Parameters.AddWithValue("@start", startingPrice);
         command.Parameters.AddWithValue("@name", name);
         command.Parameters.AddWithValue("@end", endTime.UtcDateTime);
         command.Parameters.AddWithValue("@seller", sellerId);
+        command.Parameters.AddWithValue("@buyNow", buyNowPrice);
         await command.ExecuteNonQueryAsync();
         return new Auction(checked((int)command.LastInsertedId), name, endTime.ToUniversalTime(), sellerId);
     }

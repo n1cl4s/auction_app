@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using MySqlConnector;
 
 namespace SimpleAuctions.Tests;
 
@@ -114,5 +115,47 @@ public sealed class AuctionApiTests(AuctionApiFixture fixture)
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, create.StatusCode);
+    }
+
+    [Fact]
+    public async Task LowBuyNowTest()
+    {
+        await fixture.ResetDatabaseAsync();
+        using var client = fixture.CreateClient();
+        await TestData.RegisterAndLoginAsync(client, TestData.UniqueEmail());
+
+        using var create = await client.PostAsJsonAsync("/api/auctions", new
+        {
+            name = "Volvo V70",
+            endTime = DateTimeOffset.UtcNow.AddDays(1),
+            startingPrice = 5000m,
+            buyNowPrice = 4000m
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, create.StatusCode);
+    }
+    
+    [Fact]
+    public async Task BuyNowPriceIsSavedTest()
+    {
+        await fixture.ResetDatabaseAsync();
+        using var client = fixture.CreateClient();
+        await TestData.RegisterAndLoginAsync(client, TestData.UniqueEmail());
+
+        using var create = await client.PostAsJsonAsync("/api/auctions", new
+        {
+            name = "Volvo V70",
+            endTime = DateTimeOffset.UtcNow.AddDays(1),
+            startingPrice = 5000m,
+            buyNowPrice = 8000m
+        });
+        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+
+        await using var connection = new MySqlConnection(fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = new MySqlCommand("SELECT buy_now_price FROM auctions;", connection);
+        var saved = await command.ExecuteScalarAsync();
+
+        Assert.Equal<object?>(8000m, saved);
     }
 }
