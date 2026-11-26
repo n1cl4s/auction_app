@@ -4,6 +4,7 @@
 **/obj/
 /Database/*
 !/Database/car-auctions.sql
+!/Database/reset-car-auctions.sql
 !/Database/car-test-data.sql
 !/Database/car-test-image.sql
 !/Database/sample-images/

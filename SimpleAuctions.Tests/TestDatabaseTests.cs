@@ -1,4 +1,6 @@
 using MySqlConnector;
+using Microsoft.Extensions.Configuration;
+using SimpleAuctions.Repositories;
 
 namespace SimpleAuctions.Tests;
 
@@ -41,5 +43,43 @@ public sealed class TestDatabaseTests(AuctionApiFixture fixture)
             await using var command = new MySqlCommand($"SELECT COUNT(*) FROM {table}", connection);
             Assert.Equal(0L, (long)(await command.ExecuteScalarAsync())!);
         }
+    }
+
+    [Fact]
+    public async Task BuyNowPurchaseRepositoryPersistsAndReadsPurchase()
+    {
+        await fixture.ResetDatabaseAsync();
+        await using (var connection = new MySqlConnection(fixture.ConnectionString))
+        {
+            await connection.OpenAsync();
+            foreach (var statement in new[]
+            {
+                "INSERT INTO users (id, email, password_hash) VALUES (1, 'seller@example.test', 'hash'), (2, 'buyer@example.test', 'hash')",
+                "INSERT INTO auctions (id, name, end_time, seller_id) VALUES (1, 'Car', UTC_TIMESTAMP(6), 1)"
+            })
+            {
+                await using var command = new MySqlCommand(statement, connection);
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:AuctionDatabase"] = fixture.ConnectionString
+            })
+            .Build();
+        var repository = new BuyNowPurchaseRepository(configuration);
+        var created = await repository.Create(1, 2, 200);
+        var persisted = await repository.GetByAuction(1);
+
+        Assert.NotNull(persisted);
+        Assert.Equal(created.AuctionId, persisted.AuctionId);
+        Assert.Equal(created.BuyerId, persisted.BuyerId);
+        Assert.Equal(created.Price, persisted.Price);
+        Assert.InRange(
+            Math.Abs((created.PurchasedAt - persisted.PurchasedAt).Ticks),
+            0,
+            TimeSpan.TicksPerMillisecond);
     }
 }
