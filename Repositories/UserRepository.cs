@@ -1,4 +1,3 @@
-
 using MySqlConnector;
 using SimpleAuctions.Models;
 
@@ -66,6 +65,25 @@ public class UserRepository(IConfiguration configuration)
 
         await command.ExecuteNonQueryAsync();
 
-        return new User(checked((int)command.LastInsertedId), email, passwordHash);
+        return new User(
+            checked((int)command.LastInsertedId),
+            email,
+            passwordHash
+        );
+    }
+
+    // Updates the administrator status of an existing user.
+    public async Task<bool> SetAdminAsync(int id, bool isAdmin)
+    {
+        await using var connection = new MySqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        await using var command = new MySqlCommand(
+            "UPDATE users SET is_admin = @isAdmin WHERE id = @id;", connection);
+
+        command.Parameters.AddWithValue("@id", id);
+        command.Parameters.AddWithValue("@isAdmin", isAdmin);
+
+        return await command.ExecuteNonQueryAsync() > 0;
     }
 }
