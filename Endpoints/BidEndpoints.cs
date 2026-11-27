@@ -19,6 +19,7 @@ public static class BidEndpoints
             if (buyerId is null) return Results.Unauthorized();
             var result = await repository.Create(id, data.Amount, buyerId.Value);
             if (!result.Found) return Results.NotFound();
+            if (result.Forbidden) return Results.Json(new { message = result.Error }, statusCode: 403);
             if (result.Error is not null) return Results.BadRequest(new { message = result.Error });
             return Results.Created($"/api/auctions/{id}/bids", result.Bid);
         });
