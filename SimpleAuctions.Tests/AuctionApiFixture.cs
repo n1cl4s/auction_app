@@ -22,6 +22,9 @@ public sealed class AuctionApiFixture : IAsyncLifetime
 
     private AuctionApiFactory factory = null!;
 
+    // Provides access to services registered in the test application.
+    public IServiceProvider Services => factory.Services;
+
     public async Task InitializeAsync()
     {
         await database.StartAsync();
@@ -29,11 +32,16 @@ public sealed class AuctionApiFixture : IAsyncLifetime
 
         await using var connection = new MySqlConnection(database.GetConnectionString());
         await connection.OpenAsync();
-        var schema = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Database", "script.sql"));
+
+        var schema = await File.ReadAllTextAsync(
+            Path.Combine(AppContext.BaseDirectory, "Database", "script.sql"));
+
         var statements = schema.Split(';', StringSplitOptions.RemoveEmptyEntries)
             .Select(statement => string.Join(Environment.NewLine,
-                statement.Split('\n').Where(line => !line.TrimStart().StartsWith("--", StringComparison.Ordinal))))
+                statement.Split('\n').Where(line => !line.TrimStart()
+                    .StartsWith("--", StringComparison.Ordinal))))
             .Where(statement => !string.IsNullOrWhiteSpace(statement));
+
         foreach (var statement in statements)
         {
             await using var command = new MySqlCommand(statement, connection);
@@ -50,7 +58,9 @@ public sealed class AuctionApiFixture : IAsyncLifetime
 
         foreach (var table in new[] { "bids", "auctions", "users" })
         {
-            await using var command = new MySqlCommand($"DELETE FROM {table};", connection);
+            await using var command = new MySqlCommand(
+                $"DELETE FROM {table};", connection);
+
             await command.ExecuteNonQueryAsync();
         }
     }
@@ -62,11 +72,13 @@ public sealed class AuctionApiFixture : IAsyncLifetime
     }
 }
 
-internal sealed class AuctionApiFactory(string connectionString) : WebApplicationFactory<Program>
+internal sealed class AuctionApiFactory(string connectionString)
+    : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
+
         builder.ConfigureAppConfiguration((_, configuration) =>
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
