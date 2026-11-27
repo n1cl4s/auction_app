@@ -22,6 +22,9 @@ public sealed class AuctionApiFixture : IAsyncLifetime
 
     private AuctionApiFactory factory = null!;
 
+    // Provides access to services registered in the test application.
+    public IServiceProvider Services => factory.Services;
+
     public async Task InitializeAsync()
     {
         await database.StartAsync();
@@ -29,7 +32,10 @@ public sealed class AuctionApiFixture : IAsyncLifetime
 
         await using var connection = new MySqlConnection(database.GetConnectionString());
         await connection.OpenAsync();
-        var schema = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Database", "car-auctions.sql"));
+
+        var schema = await File.ReadAllTextAsync(
+            Path.Combine(AppContext.BaseDirectory, "Database", "car-auctions.sql"));
+
         await using var command = new MySqlCommand(schema, connection);
         await command.ExecuteNonQueryAsync();
     }
@@ -43,9 +49,18 @@ public sealed class AuctionApiFixture : IAsyncLifetime
         await using var connection = new MySqlConnection(database.GetConnectionString());
         await connection.OpenAsync();
 
-        foreach (var table in new[] { "buy_now_purchases", "auction_images", "bids", "auctions", "users" })
+        foreach (var table in new[]
         {
-            await using var command = new MySqlCommand($"DELETE FROM {table};", connection);
+            "buy_now_purchases",
+            "auction_images",
+            "bids",
+            "auctions",
+            "users"
+        })
+        {
+            await using var command = new MySqlCommand(
+                $"DELETE FROM {table};", connection);
+
             await command.ExecuteNonQueryAsync();
         }
     }
@@ -57,11 +72,13 @@ public sealed class AuctionApiFixture : IAsyncLifetime
     }
 }
 
-internal sealed class AuctionApiFactory(string connectionString) : WebApplicationFactory<Program>
+internal sealed class AuctionApiFactory(string connectionString)
+    : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
+
         builder.ConfigureAppConfiguration((_, configuration) =>
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {

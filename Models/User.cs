@@ -1,3 +1,9 @@
+
 namespace SimpleAuctions.Models;
 
-public record User(int Id, string Email, string PasswordHash);
+public record User(
+    int Id,
+    string Email,
+    string PasswordHash,
+    bool IsAdmin = false
+);
