@@ -35,6 +35,10 @@ public static class AuctionEndpoints
                 return Results.BadRequest(new { message = "Name (1–200 characters) and a future endTime are required." });
             if (!IsValidCarDetails(data))
                 return Results.BadRequest(new { message = "Car details or prices are invalid." });
+            if (data.StartingPrice is null || data.StartingPrice < 1000 || decimal.Truncate(data.StartingPrice.Value) != data.StartingPrice)
+                return Results.BadRequest(new { message = "Starting price must be at least 1000 kr and whole kronor." });
+            if (data.BuyNowPrice <= data.StartingPrice)
+                return Results.BadRequest(new { message = "Buy now price must be higher than the starting price." });
             var auction = await repository.Create(
                 data.Name.Trim(), data.EndTime, sellerId.Value, data.CarModel, data.ModelYear,
                 data.MileageKm, data.Transmission, data.FuelType, data.Description, data.Color,

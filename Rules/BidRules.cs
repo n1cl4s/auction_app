@@ -2,8 +2,11 @@ namespace SimpleAuctions.Rules;
 
 public static class BidRules
 {
-    public static string? Validate(decimal amount, DateTimeOffset endTime, DateTimeOffset now, int sellerId, int buyerId, decimal? highestBid = null)
+    public static string? Validate(decimal amount, DateTimeOffset endTime, DateTimeOffset now, int sellerId, int buyerId, decimal? highestBid = null, decimal startPrice = 0)
     {
+        if (highestBid is null && amount < startPrice)
+        return "First bid must be at least the start price.";
+
         if (sellerId == buyerId)
         return "You cannot bid on your own auction.";
 

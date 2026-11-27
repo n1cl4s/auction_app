@@ -18,7 +18,7 @@ public sealed class BidApiTests(AuctionApiFixture fixture)
         var auctionResponse = await seller.PostAsJsonAsync("/api/auctions", new
         {
             name = $"Auction-{Guid.NewGuid():N}",
-            endTime = DateTimeOffset.UtcNow.AddDays(1)
+            endTime = DateTimeOffset.UtcNow.AddDays(1), startingPrice = 1000m
         });
         Assert.Equal(HttpStatusCode.Created, auctionResponse.StatusCode);
         var auctionUrl = auctionResponse.Headers.Location!.ToString();
@@ -50,7 +50,7 @@ public sealed class BidApiTests(AuctionApiFixture fixture)
         using var create = await seller.PostAsJsonAsync("/api/auctions", new
         {
             name = $"Auction-{Guid.NewGuid():N}",
-            endTime = DateTimeOffset.UtcNow.AddDays(1)
+            endTime = DateTimeOffset.UtcNow.AddDays(1), startingPrice = 1000m
         });
         var auctionId = int.Parse(create.Headers.Location!.ToString().Split('/').Last());
 
@@ -74,7 +74,7 @@ public async Task OwnBidForbiddenTest()
     var auctionResponse = await seller.PostAsJsonAsync("/api/auctions", new
     {
         name = $"Auction-{Guid.NewGuid():N}",
-        endTime = DateTimeOffset.UtcNow.AddDays(1)
+        endTime = DateTimeOffset.UtcNow.AddDays(1), startingPrice = 1000m
     });
     var auctionId = int.Parse(auctionResponse.Headers.Location!.ToString().Split('/').Last());
 
@@ -94,7 +94,7 @@ public async Task LowRaiseApiTest()
     var auctionResponse = await seller.PostAsJsonAsync("/api/auctions", new
     {
         name = $"Auction-{Guid.NewGuid():N}",
-        endTime = DateTimeOffset.UtcNow.AddDays(1)
+        endTime = DateTimeOffset.UtcNow.AddDays(1), startingPrice = 1000m
     });
     var auctionId = int.Parse(auctionResponse.Headers.Location!.ToString().Split('/').Last());
     await TestData.RegisterAndLoginAsync(buyer, TestData.UniqueEmail());
@@ -116,5 +116,26 @@ public async Task MissingAuctionBidTest()
     using var bid = await buyer.PostAsJsonAsync("/api/auctions/999999/bids", new { amount = 1000m });
 
     Assert.Equal(HttpStatusCode.NotFound, bid.StatusCode);
+}
+
+[Fact]
+public async Task StartPriceApiTest()
+{
+    await fixture.ResetDatabaseAsync();
+    using var seller = fixture.CreateClient();
+    using var buyer = fixture.CreateClient();
+    await TestData.RegisterAndLoginAsync(seller, TestData.UniqueEmail());
+
+    var auctionResponse = await seller.PostAsJsonAsync("/api/auctions", new
+    {
+        name = $"Auction-{Guid.NewGuid():N}",
+        endTime = DateTimeOffset.UtcNow.AddDays(1), startingPrice = 5000m
+    });
+    var auctionId = int.Parse(auctionResponse.Headers.Location!.ToString().Split('/').Last());
+    await TestData.RegisterAndLoginAsync(buyer, TestData.UniqueEmail());
+
+    using var bid = await buyer.PostAsJsonAsync($"/api/auctions/{auctionId}/bids", new { amount = 4999m });
+
+    Assert.Equal(HttpStatusCode.BadRequest, bid.StatusCode);
 }
 }
